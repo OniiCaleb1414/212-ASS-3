@@ -10,12 +10,50 @@ public class Edge {
     EdgeType type;
 
     public Edge(Vertex v1, Vertex v2, String type, double weight) {
-        
+        this.v1 = v1;
+        this.v2 = v2;
+        this.weight = weight;
+
+        if (type == null) {
+            this.type = EdgeType.UNDEFINED;
+            return;
+        }
+
+        switch (type.toLowerCase()) {
+            case "iron":
+                this.type = EdgeType.IRON;
+                break;
+            case "coal":
+                this.type = EdgeType.COAL;
+                break;
+            case "copper":
+                this.type = EdgeType.COPPER;
+                break;
+            case "caterium":
+                this.type = EdgeType.CATERIUM;
+                break;
+            case "aluminum":
+                this.type = EdgeType.ALUMINUM;
+                break;
+            default:
+                this.type = EdgeType.UNDEFINED;
+                break;
+        }
     }
 
     @Override
     public boolean equals(Object obj) {
-
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Edge)) {
+            return false;
+        }
+        Edge other = (Edge) obj;
+        return v1 == other.v1
+                && v2 == other.v2
+                && type == other.type
+                && Double.compare(weight, other.weight) == 0;
     }
 
     @Override
