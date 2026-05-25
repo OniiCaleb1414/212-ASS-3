@@ -56,6 +56,11 @@ public class Vertex {
     }
 
     @Override
+    public int hashCode() {
+        return type == null ? 0 : type.hashCode();
+    }
+
+    @Override
     public String toString() {
         String image = "";
         switch (type) {

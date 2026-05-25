@@ -57,6 +57,17 @@ public class Edge {
     }
 
     @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + (type == null ? 0 : type.hashCode());
+        result = 31 * result + System.identityHashCode(v1);
+        result = 31 * result + System.identityHashCode(v2);
+        long bits = Double.doubleToLongBits(weight);
+        result = 31 * result + (int) (bits ^ (bits >>> 32));
+        return result;
+    }
+
+    @Override
     public String toString() {
         String image = "";
         switch (type) {

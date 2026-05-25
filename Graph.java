@@ -177,7 +177,6 @@ public class Graph {
 
     public Graph MST() {
         Graph mst = new Graph();
-        mst.vertices.clear();
 
         IdentityHashMap<Vertex, Vertex> vertexMap = new IdentityHashMap<>();
         int maxCounter = 0;
@@ -499,7 +498,6 @@ public class Graph {
 
     private Graph buildComponentGraph(ArrayList<Vertex> componentVertices) {
         Graph component = new Graph();
-        component.vertices.clear();
 
         IdentityHashMap<Vertex, Vertex> map = new IdentityHashMap<>();
         int maxCounter = 0;

@@ -15,23 +15,33 @@ public class Main {
         Vertex v1 = new Vertex("smelter");
         Vertex v2 = new Vertex("smelter");
         Vertex v3 = new Vertex("unknown");
-        v1.equals(v2);
-        v1.equals(v3);
-        v1.toString();
+        int sink = 0;
+        boolean sameType = v1.equals(v2);
+        boolean diffType = v1.equals(v3);
+        String vertexText = v1.toString();
+        sink += sameType ? 1 : 0;
+        sink += diffType ? 1 : 0;
+        sink += vertexText.length();
 
         Edge edge1 = new Edge(v1, v2, "iron", 2.5);
         Edge edge2 = new Edge(v1, v2, "iron", 2.5);
         Edge edge3 = new Edge(v2, v3, "coal", 1.0);
-        edge1.equals(edge2);
-        edge1.equals(edge3);
-        edge1.toString();
+        boolean edgeSame = edge1.equals(edge2);
+        boolean edgeDiff = edge1.equals(edge3);
+        String edgeText = edge1.toString();
+        sink += edgeSame ? 1 : 0;
+        sink += edgeDiff ? 1 : 0;
+        sink += edgeText.length();
 
         Edge[] heapEdges = new Edge[] { edge1, edge3, new Edge(v3, v1, "copper", 0.5) };
         MinHeap heap = new MinHeap(heapEdges);
         heap.pop();
         heap.pop();
         heap.pop();
-        heap.pop();
+        Edge emptyPop = heap.pop();
+        if (emptyPop != null) {
+            sink += emptyPop.toString().length();
+        }
 
         Graph fileGraph = buildSampleGraph();
         try {
@@ -50,6 +60,10 @@ public class Main {
             e.printStackTrace();
         }
         loaded.printToFile();
+
+        if (sink == -1) {
+            System.out.println("Unreachable");
+        }
     }
 
     private static Graph buildSampleGraph() {
