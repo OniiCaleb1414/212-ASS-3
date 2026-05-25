@@ -13,7 +13,7 @@ public class Graph {
 
     public Graph(String filename) {
         this();
-        int[] maxCounter = new int[] { 0 };
+        int maxCounter = 0;
         try {
             for (String line : Files.readAllLines(Paths.get(filename))) {
                 if (line == null) {
@@ -43,21 +43,30 @@ public class Graph {
                     }
                     String v1Token = verticesPart.substring(0, arrowIndex).trim();
                     String v2Token = verticesPart.substring(arrowIndex + 2).trim();
-                    Vertex v1 = ensureVertex(v1Token, maxCounter);
-                    Vertex v2 = ensureVertex(v2Token, maxCounter);
+                    Vertex v1 = ensureVertex(v1Token);
+                    Vertex v2 = ensureVertex(v2Token);
+                    if (v1 != null && v1.counter > maxCounter) {
+                        maxCounter = v1.counter;
+                    }
+                    if (v2 != null && v2.counter > maxCounter) {
+                        maxCounter = v2.counter;
+                    }
                     if (v1 != null && v2 != null) {
                         addEdge(v1, v2, edgeType, weight);
                     }
                 } else {
-                    ensureVertex(line, maxCounter);
+                    Vertex vertex = ensureVertex(line);
+                    if (vertex != null && vertex.counter > maxCounter) {
+                        maxCounter = vertex.counter;
+                    }
                 }
             }
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
 
-        if (Vertex.globalCounter <= maxCounter[0]) {
-            Vertex.globalCounter = maxCounter[0] + 1;
+        if (Vertex.globalCounter <= maxCounter) {
+            Vertex.globalCounter = maxCounter + 1;
         }
     }
 
@@ -78,7 +87,7 @@ public class Graph {
             if (vertex.edges.size() <= 1) {
                 continue;
             }
-            double maxWeight = -Double.MAX_VALUE;
+            double maxWeight = Double.NEGATIVE_INFINITY;
             int maxIndex = -1;
             for (int i = 0; i < vertex.edges.size(); i++) {
                 double weight = vertex.edges.get(i).weight;
@@ -271,7 +280,7 @@ public class Graph {
                 ArrayList<Edge> originals = edgePairs.get(key);
                 if (originals != null) {
                     for (Edge original : originals) {
-                        String edgeKey = original.v1.counter + "->" + original.v2.counter + ":" + original.type + ":" + original.weight;
+                        String edgeKey = edgeKey(original);
                         if (addedEdges.contains(edgeKey)) {
                             continue;
                         }
@@ -362,7 +371,7 @@ public class Graph {
         return null;
     }
 
-    private Vertex ensureVertex(String token, int[] maxCounter) {
+    private Vertex ensureVertex(String token) {
         String cleaned = token.trim();
         if (cleaned.startsWith("(") && cleaned.endsWith(")")) {
             cleaned = cleaned.substring(1, cleaned.length() - 1);
@@ -372,9 +381,6 @@ public class Graph {
             return null;
         }
         int counter = Integer.parseInt(parts[0]);
-        if (counter > maxCounter[0]) {
-            maxCounter[0] = counter;
-        }
         Vertex existing = getVertex(counter);
         if (existing != null) {
             return existing;
@@ -439,6 +445,10 @@ public class Graph {
         int min = Math.min(a, b);
         int max = Math.max(a, b);
         return min + ":" + max;
+    }
+
+    private static String edgeKey(Edge edge) {
+        return edge.v1.counter + "->" + edge.v2.counter + ":" + edge.type + ":" + edge.weight;
     }
 
     private static Vertex resolveVertex(Vertex vertex, IdentityHashMap<Vertex, Vertex> replacements) {

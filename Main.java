@@ -15,13 +15,13 @@ public class Main {
         Vertex v1 = new Vertex("smelter");
         Vertex v2 = new Vertex("smelter");
         Vertex v3 = new Vertex("unknown");
-        int sink = 0;
+        int testResultSink = 0;
         boolean sameType = v1.equals(v2);
         boolean diffType = v1.equals(v3);
         String vertexText = v1.toString();
-        sink += sameType ? 1 : 0;
-        sink += diffType ? 1 : 0;
-        sink += vertexText.length();
+        testResultSink += sameType ? 1 : 0;
+        testResultSink += diffType ? 1 : 0;
+        testResultSink += vertexText.length();
 
         Edge edge1 = new Edge(v1, v2, "iron", 2.5);
         Edge edge2 = new Edge(v1, v2, "iron", 2.5);
@@ -29,9 +29,9 @@ public class Main {
         boolean edgeSame = edge1.equals(edge2);
         boolean edgeDiff = edge1.equals(edge3);
         String edgeText = edge1.toString();
-        sink += edgeSame ? 1 : 0;
-        sink += edgeDiff ? 1 : 0;
-        sink += edgeText.length();
+        testResultSink += edgeSame ? 1 : 0;
+        testResultSink += edgeDiff ? 1 : 0;
+        testResultSink += edgeText.length();
 
         Edge[] heapEdges = new Edge[] { edge1, edge3, new Edge(v3, v1, "copper", 0.5) };
         MinHeap heap = new MinHeap(heapEdges);
@@ -40,7 +40,7 @@ public class Main {
         heap.pop();
         Edge emptyPop = heap.pop();
         if (emptyPop != null) {
-            sink += emptyPop.toString().length();
+            testResultSink += emptyPop.toString().length();
         }
 
         Graph fileGraph = buildSampleGraph();
@@ -61,7 +61,7 @@ public class Main {
         }
         loaded.printToFile();
 
-        if (sink == -1) {
+        if (testResultSink == -1) {
             System.out.println("Unreachable");
         }
     }
@@ -77,7 +77,7 @@ public class Main {
         Vertex g = graph.addVertex("refinery");
         Vertex h = graph.addVertex("smelter");
         Vertex i = graph.addVertex("generator");
-        Vertex j = graph.addVertex("undefined");
+        Vertex unknown = graph.addVertex("undefined");
         graph.addVertex("generator");
 
         graph.addEdge(d, a, "copper", 1);
@@ -89,8 +89,8 @@ public class Main {
         graph.addEdge(g, h, "aluminum", 1);
         graph.addEdge(e, f, "copper", 1);
         graph.addEdge(h, e, "iron", 1);
-        graph.addEdge(i, j, "iron", 1);
-        graph.addEdge(j, j, "iron", 2);
+        graph.addEdge(i, unknown, "iron", 1);
+        graph.addEdge(unknown, unknown, "iron", 2);
 
         return graph;
     }
