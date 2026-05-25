@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Stack;
-import java.util.Comparator;
 
 public class Graph {
     private final ArrayList<Vertex> vertices;
@@ -35,7 +34,12 @@ public class Graph {
                         continue;
                     }
                     String edgeType = normalizeType(edgeParts[0]);
-                    double weight = Double.parseDouble(edgeParts[1].trim());
+                    double weight;
+                    try {
+                        weight = Double.parseDouble(edgeParts[1].trim());
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
 
                     int arrowIndex = verticesPart.indexOf("->");
                     if (arrowIndex < 0) {
@@ -253,14 +257,11 @@ public class Graph {
                 sameWeight.add(heap.pop());
             }
 
-            sameWeight.sort(new Comparator<Edge>() {
-                @Override
-                public int compare(Edge a, Edge b) {
-                    if (a.v1.counter != b.v1.counter) {
-                        return Integer.compare(a.v1.counter, b.v1.counter);
-                    }
-                    return Integer.compare(a.v2.counter, b.v2.counter);
+            sameWeight.sort((a, b) -> {
+                if (a.v1.counter != b.v1.counter) {
+                    return Integer.compare(a.v1.counter, b.v1.counter);
                 }
+                return Integer.compare(a.v2.counter, b.v2.counter);
             });
 
             for (Edge candidate : sameWeight) {
@@ -380,7 +381,12 @@ public class Graph {
         if (parts.length == 0) {
             return null;
         }
-        int counter = Integer.parseInt(parts[0]);
+        int counter;
+        try {
+            counter = Integer.parseInt(parts[0]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
         Vertex existing = getVertex(counter);
         if (existing != null) {
             return existing;

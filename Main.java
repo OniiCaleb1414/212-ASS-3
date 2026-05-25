@@ -61,8 +61,8 @@ public class Main {
         }
         loaded.printToFile();
 
-        if (testResultSink == -1) {
-            System.out.println("Unreachable");
+        if (testResultSink % 2 == 0) {
+            loaded.toString();
         }
     }
 
@@ -77,7 +77,7 @@ public class Main {
         Vertex g = graph.addVertex("refinery");
         Vertex h = graph.addVertex("smelter");
         Vertex i = graph.addVertex("generator");
-        Vertex unknown = graph.addVertex("undefined");
+        Vertex undefinedVertex = graph.addVertex("undefined");
         graph.addVertex("generator");
 
         graph.addEdge(d, a, "copper", 1);
@@ -89,8 +89,8 @@ public class Main {
         graph.addEdge(g, h, "aluminum", 1);
         graph.addEdge(e, f, "copper", 1);
         graph.addEdge(h, e, "iron", 1);
-        graph.addEdge(i, unknown, "iron", 1);
-        graph.addEdge(unknown, unknown, "iron", 2);
+        graph.addEdge(i, undefinedVertex, "iron", 1);
+        graph.addEdge(undefinedVertex, undefinedVertex, "iron", 2);
 
         return graph;
     }

@@ -50,8 +50,10 @@ public class Edge {
             return false;
         }
         Edge other = (Edge) obj;
-        return v1 == other.v1
-                && v2 == other.v2
+        boolean v1Equal = v1 == null ? other.v1 == null : v1.equals(other.v1);
+        boolean v2Equal = v2 == null ? other.v2 == null : v2.equals(other.v2);
+        return v1Equal
+                && v2Equal
                 && type == other.type
                 && Double.compare(weight, other.weight) == 0;
     }
@@ -60,8 +62,8 @@ public class Edge {
     public int hashCode() {
         int result = 17;
         result = 31 * result + (type == null ? 0 : type.hashCode());
-        result = 31 * result + System.identityHashCode(v1);
-        result = 31 * result + System.identityHashCode(v2);
+        result = 31 * result + (v1 == null ? 0 : v1.hashCode());
+        result = 31 * result + (v2 == null ? 0 : v2.hashCode());
         long bits = Double.doubleToLongBits(weight);
         result = 31 * result + (int) (bits ^ (bits >>> 32));
         return result;
