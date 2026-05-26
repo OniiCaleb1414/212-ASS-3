@@ -176,10 +176,9 @@ public class Graph {
                 }
             }
         }
-        for (int i = 0; i < vertices.size(); i++) {
+        for (int i = vertices.size() - 1; i >= 0; i--) {
             if (!connected.contains(vertices.get(i).counter)) {
                 vertices.remove(i);
-                i--;
             }
         }
     }

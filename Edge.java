@@ -53,7 +53,7 @@ public class Edge {
         return v1.counter == other.v1.counter
                 && v2.counter == other.v2.counter
                 && type == other.type
-                && weight == other.weight;
+                && Double.compare(weight, other.weight) == 0;
     }
 
     @Override
