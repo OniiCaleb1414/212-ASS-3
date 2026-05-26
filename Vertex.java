@@ -11,12 +11,48 @@ public class Vertex {
     VertexType type;
 
     public Vertex(String type) {
-        
+        if (type == null) {
+            this.type = VertexType.UNDEFINED;
+            return;
+        }
+
+        switch (type.toLowerCase()) {
+            case "miner":
+                this.type = VertexType.MINER;
+                break;
+            case "smelter":
+                this.type = VertexType.SMELTER;
+                break;
+            case "constructor":
+                this.type = VertexType.CONSTRUCTOR;
+                break;
+            case "assembler":
+                this.type = VertexType.ASSEMBLER;
+                break;
+            case "manufacturer":
+                this.type = VertexType.MANUFACTURER;
+                break;
+            case "refinery":
+                this.type = VertexType.REFINERY;
+                break;
+            case "generator":
+                this.type = VertexType.GENERATOR;
+                break;
+            default:
+                this.type = VertexType.UNDEFINED;
+        }
     }
 
     @Override
     public boolean equals(Object obj) {
-
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Vertex)) {
+            return false;
+        }
+        Vertex other = (Vertex) obj;
+        return type == other.type;
     }
 
     @Override
