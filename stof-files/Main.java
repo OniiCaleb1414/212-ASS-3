@@ -31,48 +31,51 @@ public class Main {
 
     private static void runAll() throws Exception {
         Vertex.globalCounter = 1;
-        runTest("empty graph", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testEmptyGraph();
-            }
-        });
-        runTest("file load", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testFileLoad();
-            }
-        });
-        runTest("optimizations", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testOptimizations();
-            }
-        });
-        runTest("mst", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testMst();
-            }
-        });
-        runTest("scc", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testScc();
-            }
-        });
-        runTest("generator", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testGenerator();
-            }
-        });
-        runTest("edge/vertex coverage", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testEdgeVertexCoverage();
-            }
-        });
+        int repetitions = 10;
+        for (int i = 1; i <= repetitions; i++) {
+            runTest("empty graph #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testEmptyGraph();
+                }
+            });
+            runTest("file load #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testFileLoad();
+                }
+            });
+            runTest("optimizations #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testOptimizations();
+                }
+            });
+            runTest("mst #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testMst();
+                }
+            });
+            runTest("scc #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testScc();
+                }
+            });
+            runTest("generator #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testGenerator();
+                }
+            });
+            runTest("edge/vertex coverage #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testEdgeVertexCoverage();
+                }
+            });
+        }
     }
 
     private interface TestCase {
@@ -111,6 +114,7 @@ public class Main {
     private static void testEmptyGraph() {
         Graph empty = new Graph();
         empty.toString();
+        empty.printToFile();
         empty.Stage1Optimization();
         empty.Stage2Optimization();
         empty.Stage3Optimization();
