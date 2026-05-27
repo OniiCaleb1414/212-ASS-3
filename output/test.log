@@ -1,0 +1,7 @@
+Test passed: empty graph
+Test passed: file load
+Test passed: optimizations
+Test passed: mst
+Test passed: scc
+Test passed: generator
+Test passed: edge/vertex coverage
