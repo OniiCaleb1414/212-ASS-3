@@ -12,6 +12,9 @@ public class Vertex {
 
     public Vertex(String type) {
         String value = type == null ? "" : type.trim().toLowerCase();
+        if (value.endsWith(".png")) {
+            value = value.substring(0, value.length() - 4);
+        }
         switch (value) {
             case "miner":
                 this.type = VertexType.MINER;
@@ -57,28 +60,28 @@ public class Vertex {
         String image = "";
         switch (type) {
             case MINER:
-                image = "miner";
+                image = "miner.png";
                 break;
             case SMELTER:
-                image = "smelter";
+                image = "smelter.png";
                 break;
             case CONSTRUCTOR:
-                image = "constructor";
+                image = "constructor.png";
                 break;
             case ASSEMBLER:
-                image = "assembler";
+                image = "assembler.png";
                 break;
             case MANUFACTURER:
-                image = "manufacturer";
+                image = "manufacturer.png";
                 break;
             case REFINERY:
-                image = "refinery";
+                image = "refinery.png";
                 break;
             case GENERATOR:
-                image = "generator";
+                image = "generator.png";
                 break;
             default:
-                image = "undefined";
+                image = "undefined.png";
         }
 
         return "(" + counter + " " + image + ")";

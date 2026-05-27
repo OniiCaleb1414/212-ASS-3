@@ -31,48 +31,51 @@ public class Main {
 
     private static void runAll() throws Exception {
         Vertex.globalCounter = 1;
-        runTest("empty graph", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testEmptyGraph();
-            }
-        });
-        runTest("file load", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testFileLoad();
-            }
-        });
-        runTest("optimizations", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testOptimizations();
-            }
-        });
-        runTest("mst", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testMst();
-            }
-        });
-        runTest("scc", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testScc();
-            }
-        });
-        runTest("generator", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testGenerator();
-            }
-        });
-        runTest("edge/vertex coverage", new TestCase() {
-            @Override
-            public void run() throws Exception {
-                testEdgeVertexCoverage();
-            }
-        });
+        int repetitions = 10;
+        for (int i = 1; i <= repetitions; i++) {
+            runTest("empty graph #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testEmptyGraph();
+                }
+            });
+            runTest("file load #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testFileLoad();
+                }
+            });
+            runTest("optimizations #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testOptimizations();
+                }
+            });
+            runTest("mst #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testMst();
+                }
+            });
+            runTest("scc #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testScc();
+                }
+            });
+            runTest("generator #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testGenerator();
+                }
+            });
+            runTest("edge/vertex coverage #" + i, new TestCase() {
+                @Override
+                public void run() throws Exception {
+                    testEdgeVertexCoverage();
+                }
+            });
+        }
     }
 
     private interface TestCase {
@@ -98,6 +101,7 @@ public class Main {
 
     private static void log(String message) {
         testLog.append(message).append(System.lineSeparator());
+        System.out.println(message);
     }
 
     private static void logException(Exception e) {
@@ -111,6 +115,7 @@ public class Main {
     private static void testEmptyGraph() {
         Graph empty = new Graph();
         empty.toString();
+        empty.printToFile();
         empty.Stage1Optimization();
         empty.Stage2Optimization();
         empty.Stage3Optimization();
@@ -139,7 +144,7 @@ public class Main {
         fromFile.getVertex(a.counter);
 
         // Ensure isolated vertex parsing is exercised.
-        Files.write(Paths.get(path), (base.toString() + "\n(" + d.counter + " generator)\n").getBytes());
+        Files.write(Paths.get(path), (base.toString() + "\n(" + d.counter + " generator.png)\n").getBytes());
         Graph withIsolated = new Graph(path);
         withIsolated.toString();
     }
@@ -253,19 +258,19 @@ public class Main {
     }
 
     private static void printSampleOutput() {
-        String sample = "iron,1.0:(1 smelter)->(2 constructor)\n"
-                + "coal,1.0:(2 constructor)->(4 assembler)\n"
-                + "copper,1.0:(3 miner)->(1 smelter)\n"
-                + "copper,1.0:(5 constructor)->(6 manufacturer)\n"
-                + "caterium,1.0:(5 constructor)->(1 smelter)\n"
-                + "aluminum,1.0:(7 refinery)->(8 smelter)\n"
-                + "iron,1.0:(8 smelter)->(5 constructor)\n\n"
-                + "iron,2.0:(1 smelter)->(2 constructor)\n"
-                + "caterium,1.0:(2 constructor)->(1 smelter)\n"
-                + "coal,1.0:(2 constructor)->(4 assembler)\n"
-                + "copper,1.0:(2 constructor)->(6 manufacturer)\n"
-                + "copper,1.0:(3 miner)->(1 smelter)\n"
-                + "aluminum,1.0:(7 refinery)->(1 smelter)\n";
+        String sample = "iron.png,1.0:(1 smelter.png)->(2 constructor.png)\n"
+                + "coal.png,1.0:(2 constructor.png)->(4 assembler.png)\n"
+                + "copper.png,1.0:(3 miner.png)->(1 smelter.png)\n"
+                + "copper.png,1.0:(5 constructor.png)->(6 manufacturer.png)\n"
+                + "caterium.png,1.0:(5 constructor.png)->(1 smelter.png)\n"
+                + "aluminum.png,1.0:(7 refinery.png)->(8 smelter.png)\n"
+                + "iron.png,1.0:(8 smelter.png)->(5 constructor.png)\n\n"
+                + "iron.png,2.0:(1 smelter.png)->(2 constructor.png)\n"
+                + "caterium.png,1.0:(2 constructor.png)->(1 smelter.png)\n"
+                + "coal.png,1.0:(2 constructor.png)->(4 assembler.png)\n"
+                + "copper.png,1.0:(2 constructor.png)->(6 manufacturer.png)\n"
+                + "copper.png,1.0:(3 miner.png)->(1 smelter.png)\n"
+                + "aluminum.png,1.0:(7 refinery.png)->(1 smelter.png)\n";
         System.out.print(sample);
     }
 

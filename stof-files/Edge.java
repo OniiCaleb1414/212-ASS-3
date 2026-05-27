@@ -15,6 +15,9 @@ public class Edge {
         this.weight = weight;
 
         String value = type == null ? "" : type.trim().toLowerCase();
+        if (value.endsWith(".png")) {
+            value = value.substring(0, value.length() - 4);
+        }
         switch (value) {
             case "iron":
                 this.type = EdgeType.IRON;
@@ -46,8 +49,8 @@ public class Edge {
             return false;
         }
         Edge other = (Edge) obj;
-        return this.v1.counter == other.v1.counter
-            && this.v2.counter == other.v2.counter
+        return this.v1.equals(other.v1)
+                && this.v2.equals(other.v2)
                 && this.type == other.type
                 && Double.compare(this.weight, other.weight) == 0;
     }
@@ -57,22 +60,22 @@ public class Edge {
         String image = "";
         switch (type) {
             case IRON:
-                image = "iron";
+                image = "iron.png";
                 break;
             case COAL:
-                image = "coal";
+                image = "coal.png";
                 break;
             case COPPER:
-                image = "copper";
+                image = "copper.png";
                 break;
             case CATERIUM:
-                image = "caterium";
+                image = "caterium.png";
                 break;
             case ALUMINUM:
-                image = "aluminum";
+                image = "aluminum.png";
                 break;
             default:
-                image = "undefined";
+                image = "undefined.png";
                 break;
         }
         return image + "," + weight;

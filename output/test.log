@@ -1,0 +1,70 @@
+Test passed: empty graph #1
+Test passed: file load #1
+Test passed: optimizations #1
+Test passed: mst #1
+Test passed: scc #1
+Test passed: generator #1
+Test passed: edge/vertex coverage #1
+Test passed: empty graph #2
+Test passed: file load #2
+Test passed: optimizations #2
+Test passed: mst #2
+Test passed: scc #2
+Test passed: generator #2
+Test passed: edge/vertex coverage #2
+Test passed: empty graph #3
+Test passed: file load #3
+Test passed: optimizations #3
+Test passed: mst #3
+Test passed: scc #3
+Test passed: generator #3
+Test passed: edge/vertex coverage #3
+Test passed: empty graph #4
+Test passed: file load #4
+Test passed: optimizations #4
+Test passed: mst #4
+Test passed: scc #4
+Test passed: generator #4
+Test passed: edge/vertex coverage #4
+Test passed: empty graph #5
+Test passed: file load #5
+Test passed: optimizations #5
+Test passed: mst #5
+Test passed: scc #5
+Test passed: generator #5
+Test passed: edge/vertex coverage #5
+Test passed: empty graph #6
+Test passed: file load #6
+Test passed: optimizations #6
+Test passed: mst #6
+Test passed: scc #6
+Test passed: generator #6
+Test passed: edge/vertex coverage #6
+Test passed: empty graph #7
+Test passed: file load #7
+Test passed: optimizations #7
+Test passed: mst #7
+Test passed: scc #7
+Test passed: generator #7
+Test passed: edge/vertex coverage #7
+Test passed: empty graph #8
+Test passed: file load #8
+Test passed: optimizations #8
+Test passed: mst #8
+Test passed: scc #8
+Test passed: generator #8
+Test passed: edge/vertex coverage #8
+Test passed: empty graph #9
+Test passed: file load #9
+Test passed: optimizations #9
+Test passed: mst #9
+Test passed: scc #9
+Test passed: generator #9
+Test passed: edge/vertex coverage #9
+Test passed: empty graph #10
+Test passed: file load #10
+Test passed: optimizations #10
+Test passed: mst #10
+Test passed: scc #10
+Test passed: generator #10
+Test passed: edge/vertex coverage #10
