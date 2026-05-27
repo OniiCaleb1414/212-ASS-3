@@ -1,0 +1,5 @@
+iron,2.5:(1 smelter)->(2 constructor)
+coal,1.25:(2 constructor)->(3 miner)
+(4 generator)
+
+(4 generator)
