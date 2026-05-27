@@ -11,12 +11,35 @@ public class Vertex {
     VertexType type;
 
     public Vertex(String type) {
-        this.counter = globalCounter++;
-        this.edges = new ArrayList<>();
-        try {
-            this.type = VertexType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            this.type = VertexType.UNDEFINED;
+        String value = type == null ? "" : type.trim().toLowerCase();
+        if (value.endsWith(".png")) {
+            value = value.substring(0, value.length() - 4);
+        }
+        switch (value) {
+            case "miner":
+                this.type = VertexType.MINER;
+                break;
+            case "smelter":
+                this.type = VertexType.SMELTER;
+                break;
+            case "constructor":
+                this.type = VertexType.CONSTRUCTOR;
+                break;
+            case "assembler":
+                this.type = VertexType.ASSEMBLER;
+                break;
+            case "manufacturer":
+                this.type = VertexType.MANUFACTURER;
+                break;
+            case "refinery":
+                this.type = VertexType.REFINERY;
+                break;
+            case "generator":
+                this.type = VertexType.GENERATOR;
+                break;
+            default:
+                this.type = VertexType.UNDEFINED;
+                break;
         }
     }
 
@@ -33,28 +56,28 @@ public class Vertex {
         String image = "";
         switch (type) {
             case MINER:
-                image = "miner";
+                image = "miner.png";
                 break;
             case SMELTER:
-                image = "smelter";
+                image = "smelter.png";
                 break;
             case CONSTRUCTOR:
-                image = "constructor";
+                image = "constructor.png";
                 break;
             case ASSEMBLER:
-                image = "assembler";
+                image = "assembler.png";
                 break;
             case MANUFACTURER:
-                image = "manufacturer";
+                image = "manufacturer.png";
                 break;
             case REFINERY:
-                image = "refinery";
+                image = "refinery.png";
                 break;
             case GENERATOR:
-                image = "generator";
+                image = "generator.png";
                 break;
             default:
-                image = "undefined";
+                image = "undefined.png";
         }
 
         return "(" + counter + " " + image + ")";

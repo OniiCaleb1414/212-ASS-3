@@ -101,6 +101,7 @@ public class Main {
 
     private static void log(String message) {
         testLog.append(message).append(System.lineSeparator());
+        System.out.println(message);
     }
 
     private static void logException(Exception e) {

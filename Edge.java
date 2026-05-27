@@ -13,12 +13,30 @@ public class Edge {
         this.v1 = v1;
         this.v2 = v2;
         this.weight = weight;
-        try {
-            this.type = EdgeType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            this.type = EdgeType.UNDEFINED;
+        String value = type == null ? "" : type.trim().toLowerCase();
+        if (value.endsWith(".png")) {
+            value = value.substring(0, value.length() - 4);
         }
-
+        switch (value) {
+            case "iron":
+                this.type = EdgeType.IRON;
+                break;
+            case "coal":
+                this.type = EdgeType.COAL;
+                break;
+            case "copper":
+                this.type = EdgeType.COPPER;
+                break;
+            case "caterium":
+                this.type = EdgeType.CATERIUM;
+                break;
+            case "aluminum":
+                this.type = EdgeType.ALUMINUM;
+                break;
+            default:
+                this.type = EdgeType.UNDEFINED;
+                break;
+        }
     }
 
     @Override
@@ -37,22 +55,22 @@ public class Edge {
         String image = "";
         switch (type) {
             case IRON:
-                image = "iron";
+                image = "iron.png";
                 break;
             case COAL:
-                image = "coal";
+                image = "coal.png";
                 break;
             case COPPER:
-                image = "copper";
+                image = "copper.png";
                 break;
             case CATERIUM:
-                image = "caterium";
+                image = "caterium.png";
                 break;
             case ALUMINUM:
-                image = "aluminum";
+                image = "aluminum.png";
                 break;
             default:
-                image = "undefined";
+                image = "undefined.png";
                 break;
         }
         return image + "," + weight;

@@ -1,128 +1,171 @@
 import java.nio.file.Files;
-import java.nio.file.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Stack;
 
 public class Graph {
     private final ArrayList<Vertex> vertices;
 
-    public Graph() {
-        this.vertices = new ArrayList<>();
-    }
-
     public Graph(String filename) {
-        this.vertices = new ArrayList<>();
-        fromFile(filename);
-    }
+        vertices = new ArrayList<>();
+        if (filename == null) {
+            return;
+        }
 
-    public void Stage1Optimization() {
-        for (Vertex vertex : vertices) {
-            if (vertex.type == VertexType.MINER) {
-                vertex.edges.clear();
+        String text;
+        try {
+            text = new String(Files.readAllBytes(Paths.get(filename)));
+        } catch (java.io.IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        text = text.trim();
+        if (text.isEmpty() || text.equals("Empty graph")) {
+            return;
+        }
+
+        HashMap<Integer, Vertex> map = new HashMap<>();
+        int maxCounter = 0;
+        String[] lines = text.split("\\r?\\n");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if (!trimmed.contains("->")) {
+                Vertex v = parseVertex(trimmed, map);
+                if (v != null && v.counter > maxCounter) {
+                    maxCounter = v.counter;
+                }
+                continue;
+            }
+
+            int colonIndex = trimmed.indexOf(":");
+            if (colonIndex < 0) {
+                continue;
+            }
+            String edgePart = trimmed.substring(0, colonIndex).trim();
+            String vertexPart = trimmed.substring(colonIndex + 1).trim();
+
+            String[] edgeTokens = edgePart.split(",");
+            if (edgeTokens.length != 2) {
+                continue;
+            }
+            String edgeType = edgeTokens[0].trim();
+            double weight = Double.parseDouble(edgeTokens[1].trim());
+
+            String[] vertexTokens = vertexPart.split("->");
+            if (vertexTokens.length != 2) {
+                continue;
+            }
+            Vertex v1 = parseVertex(vertexTokens[0].trim(), map);
+            Vertex v2 = parseVertex(vertexTokens[1].trim(), map);
+            if (v1 != null && v2 != null) {
+                v1.edges.add(new Edge(v1, v2, edgeType, weight));
+                if (v1.counter > maxCounter) {
+                    maxCounter = v1.counter;
+                }
+                if (v2.counter > maxCounter) {
+                    maxCounter = v2.counter;
+                }
             }
         }
 
-        for (Vertex vertex : vertices) {
-            if (!vertex.edges.isEmpty()) {
-                Edge maxEdge = Collections.max(vertex.edges, Comparator.comparingDouble(e -> e.weight));
-                ArrayList<Edge> edgesToRemove = new ArrayList<>();
-                for (Edge edge : vertex.edges) {
-                    if (edge.weight < maxEdge.weight ||
-                       (edge.weight == maxEdge.weight && !edge.equals(maxEdge))) {
-                        edgesToRemove.add(edge);
-                    }
-                }
-                vertex.edges.removeAll(edgesToRemove);
+        for (int i = 1; i <= maxCounter; i++) {
+            Vertex v = map.get(i);
+            if (v != null) {
+                vertices.add(v);
             }
+        }
+        Vertex.globalCounter = maxCounter + 1;
+    }
+
+    public Graph() {
+        vertices = new ArrayList<>();
+    }
+
+    public void Stage1Optimization() {
+        // Remove all edges pointing TO a miner
+        for (Vertex vertex : vertices) {
+            ArrayList<Edge> filtered = new ArrayList<>();
+            for (Edge edge : vertex.edges) {
+                if (edge.v2.type != VertexType.MINER) {
+                    filtered.add(edge);
+                }
+            }
+            vertex.edges = filtered;
+        }
+
+        // Keep only the single highest-weight outgoing edge per vertex
+        for (Vertex vertex : vertices) {
+            if (vertex.edges.size() <= 1) {
+                continue;
+            }
+            Edge best = vertex.edges.get(0);
+            for (int i = 1; i < vertex.edges.size(); i++) {
+                Edge edge = vertex.edges.get(i);
+                if (edge.weight > best.weight) {
+                    best = edge;
+                }
+            }
+            ArrayList<Edge> onlyBest = new ArrayList<>();
+            onlyBest.add(best);
+            vertex.edges = onlyBest;
         }
     }
 
     public void Stage2Optimization() {
-        IdentityHashMap<Vertex, Vertex> vertexMap = new IdentityHashMap<>();
-
-        for (Vertex v : vertices) {
-            boolean mapped = false;
-            for (Vertex mappedVertex : vertexMap.keySet()) {
-                if (mappedVertex.type == v.type) {
-                    vertexMap.put(v, mappedVertex);
-                    mapped = true;
-                    break;
-                }
-            }
-            if (!mapped) {
-                vertexMap.put(v, v);
-            }
-        }
-
-        HashSet<String> processedEdges = new HashSet<>();
-        ArrayList<Edge> edgesToRemove = new ArrayList<>();
-
-        for (Vertex source : vertices) {
-            for (Edge edge : source.edges) {
-                Vertex mappedSource = vertexMap.get(source);
-                Vertex mappedDest = vertexMap.get(edge.v2);
-
-                String edgeKey = mappedSource.counter + "," + mappedDest.counter + "," + edge.type;
-
-                if (processedEdges.contains(edgeKey)) {
-                    edgesToRemove.add(edge);
-
-                    for (Vertex v : vertices) {
-                        for (Edge e : v.edges) {
-                            Vertex origSource = vertexMap.get(v);
-                            Vertex origDest = vertexMap.get(e.v2);
-                            String origKey = origSource.counter + "," + origDest.counter + "," + e.type;
-                            if (origKey.equals(edgeKey)) {
-                                e.weight += edge.weight;
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    processedEdges.add(edgeKey);
-                }
-            }
-        }
-
+        HashMap<String, Edge> representatives = new HashMap<>();
         for (Vertex vertex : vertices) {
-            vertex.edges.removeAll(edgesToRemove);
+            if (vertex.edges.isEmpty()) {
+                continue;
+            }
+            ArrayList<Edge> kept = new ArrayList<>();
+            for (Edge edge : vertex.edges) {
+                String key = edge.v1.type + "|" + edge.v2.type + "|" + edge.type;
+                Edge existing = representatives.get(key);
+                if (existing == null) {
+                    representatives.put(key, edge);
+                    kept.add(edge);
+                } else {
+                    existing.weight += edge.weight;
+                }
+            }
+            vertex.edges = kept;
         }
     }
 
     public void Stage3Optimization() {
+        // Remove self-loops
         for (Vertex vertex : vertices) {
-            ArrayList<Edge> selfLoops = new ArrayList<>();
+            ArrayList<Edge> filtered = new ArrayList<>();
             for (Edge edge : vertex.edges) {
-                if (edge.v1 == edge.v2) {
-                    selfLoops.add(edge);
+                if (edge.v1.counter != edge.v2.counter) {
+                    filtered.add(edge);
                 }
             }
-            vertex.edges.removeAll(selfLoops);
+            vertex.edges = filtered;
         }
     }
 
     public void Stage4Optimization() {
-        ArrayList<Vertex> isolatedVertices = new ArrayList<>();
+        // Remove vertices that have no edges (incoming or outgoing)
+        HashSet<Integer> active = new HashSet<>();
         for (Vertex vertex : vertices) {
-            if (vertex.edges.isEmpty()) {
-                for (Vertex v : vertices) {
-                    ArrayList<Edge> incomingEdges = new ArrayList<>();
-                    for (Edge edge : v.edges) {
-                        if (edge.v2 == vertex) {
-                            incomingEdges.add(edge);
-                        }
-                    }
-                    v.edges.removeAll(incomingEdges);
-                }
-                isolatedVertices.add(vertex);
+            for (Edge edge : vertex.edges) {
+                active.add(edge.v1.counter);
+                active.add(edge.v2.counter);
             }
         }
-        vertices.removeAll(isolatedVertices);
+
+        for (int i = vertices.size() - 1; i >= 0; i--) {
+            if (!active.contains(vertices.get(i).counter)) {
+                vertices.remove(i);
+            }
+        }
     }
 
     public void optimize() {
@@ -133,111 +176,74 @@ public class Graph {
     }
 
     public Graph MST() {
-        Graph undirectedGraph = new Graph();
-
-        for (Vertex vertex : vertices) {
-            Vertex newVertex = new Vertex(vertex.type.toString().toLowerCase());
-            undirectedGraph.vertices.add(newVertex);
-        }
-
-        HashMap<Vertex, Vertex> vertexMap = new HashMap<>();
-        for (int i = 0; i < vertices.size(); i++) {
-            vertexMap.put(vertices.get(i), undirectedGraph.vertices.get(i));
-        }
-
-        for (Vertex vertex : vertices) {
-            Vertex newVertex = vertexMap.get(vertex);
-            for (Edge edge : vertex.edges) {
-                Vertex newV1 = vertexMap.get(edge.v1);
-                Vertex newV2 = vertexMap.get(edge.v2);
-
-                undirectedGraph.addEdge(newV1, newV2, edge.type.toString(), edge.weight);
-                undirectedGraph.addEdge(newV2, newV1, edge.type.toString(), edge.weight);
-            }
-        }
-
         Graph mst = new Graph();
-
-        for (Vertex vertex : undirectedGraph.vertices) {
-            mst.vertices.add(new Vertex(vertex.type.toString().toLowerCase()));
+        HashMap<Integer, Vertex> map = new HashMap<>();
+        for (Vertex vertex : vertices) {
+            Vertex copy = mst.addVertex(vertex.type.toString().toLowerCase());
+            copy.counter = vertex.counter;
+            map.put(vertex.counter, copy);
         }
 
-        HashMap<Vertex, Vertex> mstVertexMap = new HashMap<>();
-        for (int i = 0; i < undirectedGraph.vertices.size(); i++) {
-            mstVertexMap.put(undirectedGraph.vertices.get(i), mst.vertices.get(i));
+        if (vertices.isEmpty()) {
+            return mst;
         }
 
+        // Build edge list: each original edge + its reverse (to treat graph as undirected)
         ArrayList<Edge> allEdges = new ArrayList<>();
-        boolean[][] edgeAdded = new boolean[undirectedGraph.vertices.size()][undirectedGraph.vertices.size()];
-
-        for (int i = 0; i < undirectedGraph.vertices.size(); i++) {
-            Vertex vertex = undirectedGraph.vertices.get(i);
+        HashMap<Edge, Edge> reverseToOriginal = new HashMap<>();
+        for (Vertex vertex : vertices) {
             for (Edge edge : vertex.edges) {
-                int v1Index = undirectedGraph.vertices.indexOf(edge.v1);
-                int v2Index = undirectedGraph.vertices.indexOf(edge.v2);
-                if (v1Index < v2Index && !edgeAdded[v1Index][v2Index]) {
-                    allEdges.add(edge);
-                    edgeAdded[v1Index][v2Index] = true;
-                    edgeAdded[v2Index][v1Index] = true;
-                }
+                allEdges.add(edge);
+                Edge reverse = new Edge(edge.v2, edge.v1,
+                        edge.type.toString().toLowerCase(), edge.weight);
+                allEdges.add(reverse);
+                reverseToOriginal.put(reverse, edge);
             }
         }
 
-        Collections.sort(allEdges, new Comparator<Edge>() {
-            @Override
-            public int compare(Edge e1, Edge e2) {
-                if (Double.compare(e1.weight, e2.weight) != 0) {
-                    return Double.compare(e1.weight, e2.weight);
-                }
-                int v1Comp = Integer.compare(e1.v1.counter, e2.v1.counter);
-                if (v1Comp != 0) {
-                    return v1Comp;
-                }
-                return Integer.compare(e1.v2.counter, e2.v2.counter);
-            }
-        });
+        Edge[] array = new Edge[allEdges.size()];
+        for (int i = 0; i < allEdges.size(); i++) {
+            array[i] = allEdges.get(i);
+        }
+        // Sort by (weight ASC, v1.counter ASC, v2.counter ASC) so the heap
+        // pops ties in the correct order required by the spec.
+        sortEdgeArray(array);
+        MinHeap heap = new OrderedMinHeap(array);
 
-        int[] parent = new int[mst.vertices.size()];
-        int[] rank = new int[mst.vertices.size()];
-
-        for (int i = 0; i < mst.vertices.size(); i++) {
+        int maxCounter = getMaxCounter();
+        int[] parent = new int[maxCounter + 1];
+        int[] rank = new int[maxCounter + 1];
+        for (int i = 1; i <= maxCounter; i++) {
             parent[i] = i;
+            rank[i] = 0;
         }
 
-        java.util.function.Function<Integer, Integer> find = new java.util.function.Function<Integer, Integer>() {
-            @Override
-            public Integer apply(Integer x) {
-                if (parent[x] != x) {
-                    parent[x] = apply(parent[x]);
+        int targetEdges = Math.max(0, vertices.size() - 1);
+        int addedEdges = 0;
+
+        while (heap.size > 0 && addedEdges < targetEdges) {
+            Edge edge = heap.pop();
+
+            int a = edge.v1.counter;
+            int b = edge.v2.counter;
+            if (a <= 0 || b <= 0 || a >= parent.length || b >= parent.length) {
+                continue;
+            }
+
+            if (findSet(parent, a) != findSet(parent, b)) {
+                unionSet(parent, rank, a, b);
+
+                Edge original = reverseToOriginal.get(edge);
+                if (original == null) {
+                    original = edge;
                 }
-                return parent[x];
-            }
-        };
-
-        java.util.function.BiConsumer<Integer, Integer> union = (x, y) -> {
-            int xRoot = find.apply(x);
-            int yRoot = find.apply(y);
-            if (xRoot == yRoot) return;
-            if (rank[xRoot] < rank[yRoot]) {
-                parent[xRoot] = yRoot;
-            } else if (rank[xRoot] > rank[yRoot]) {
-                parent[yRoot] = xRoot;
-            } else {
-                parent[yRoot] = xRoot;
-                rank[xRoot]++;
-            }
-        };
-
-        for (Edge edge : allEdges) {
-            int v1Index = undirectedGraph.vertices.indexOf(edge.v1);
-            int v2Index = undirectedGraph.vertices.indexOf(edge.v2);
-
-            if (find.apply(v1Index) != find.apply(v2Index)) {
-                union.accept(v1Index, v2Index);
-
-                Vertex mstV1 = mstVertexMap.get(undirectedGraph.vertices.get(v1Index));
-                Vertex mstV2 = mstVertexMap.get(undirectedGraph.vertices.get(v2Index));
-                mst.addEdge(mstV1, mstV2, edge.type.toString(), edge.weight);
+                Vertex mv1 = map.get(original.v1.counter);
+                Vertex mv2 = map.get(original.v2.counter);
+                if (mv1 != null && mv2 != null) {
+                    mst.addEdge(mv1, mv2,
+                            original.type.toString().toLowerCase(), original.weight);
+                    addedEdges++;
+                }
             }
         }
 
@@ -245,101 +251,59 @@ public class Graph {
     }
 
     public Graph[] SCC() {
-        ArrayList<Vertex> finishOrder = new ArrayList<>();
-        HashSet<Vertex> visited = new HashSet<>();
+        if (vertices.isEmpty()) {
+            return new Graph[0];
+        }
 
+        int maxCounter = getMaxCounter();
+        boolean[] visited = new boolean[maxCounter + 1];
+        Stack<Vertex> stack = new Stack<>();
+
+        // Pass 1: iterative post-order DFS on the original graph
         for (Vertex vertex : vertices) {
-            if (!visited.contains(vertex)) {
-                dfsFillOrder(vertex, visited, finishOrder);
+            if (!visited[vertex.counter]) {
+                dfsOrder(vertex, visited, stack);
             }
         }
 
-        Graph transpose = new Graph();
-        for (Vertex vertex : vertices) {
-            transpose.vertices.add(new Vertex(vertex.type.toString().toLowerCase()));
+        // Build transpose (reverse) adjacency list
+        ArrayList<Integer>[] reverse = buildReverseAdjacency(maxCounter);
+
+        // Reset visited for pass 2
+        for (int i = 0; i <= maxCounter; i++) {
+            visited[i] = false;
         }
 
-        HashMap<Vertex, Vertex> transposeVertexMap = new HashMap<>();
-        for (int i = 0; i < vertices.size(); i++) {
-            transposeVertexMap.put(vertices.get(i), transpose.vertices.get(i));
-        }
-
-        for (Vertex vertex : vertices) {
-            Vertex newVertex = transposeVertexMap.get(vertex);
-            for (Edge edge : vertex.edges) {
-                Vertex newV1 = transposeVertexMap.get(edge.v2); // reverse edge
-                Vertex newV2 = transposeVertexMap.get(edge.v1); // reverse edge
-                transpose.addEdge(newV1, newV2, edge.type.toString(), edge.weight);
+        // Pass 2: iterative DFS on the transpose in reverse-finish order
+        ArrayList<Graph> components = new ArrayList<>();
+        while (!stack.isEmpty()) {
+            Vertex vertex = stack.pop();
+            if (visited[vertex.counter]) {
+                continue;
             }
+            ArrayList<Integer> component = new ArrayList<>();
+            dfsReverse(vertex.counter, visited, reverse, component);
+            components.add(buildComponentGraph(component));
         }
 
-        visited.clear();
-        ArrayList<Graph> sccList = new ArrayList<>();
-
-        for (int i = finishOrder.size() - 1; i >= 0; i--) {
-            Vertex vertex = finishOrder.get(i);
-            if (!visited.contains(vertex)) {
-                Graph scc = new Graph();
-                HashMap<Vertex, Vertex> sccVertexMap = new HashMap<>();
-
-                ArrayList<Vertex> sccVertices = new ArrayList<>();
-                dfsCollectSCC(vertex, visited, sccVertices, sccVertexMap);
-
-                for (Vertex v : sccVertices) {
-                    scc.vertices.add(new Vertex(v.type.toString().toLowerCase()));
-                }
-
-                HashMap<Vertex, Vertex> finalVertexMap = new HashMap<>();
-                for (int j = 0; j < sccVertices.size(); j++) {
-                    finalVertexMap.put(sccVertices.get(j), scc.vertices.get(j));
-                }
-
-                for (Vertex v : sccVertices) {
-                    Vertex newV = finalVertexMap.get(v);
-                    for (Edge edge : v.edges) {
-                        if (sccVertices.contains(edge.v2)) { // only edges within SCC
-                            Vertex newV2 = finalVertexMap.get(edge.v2);
-                            scc.addEdge(newV, newV2, edge.type.toString(), edge.weight);
-                        }
-                    }
-                }
-
-                sccList.add(scc);
-            }
+        Graph[] result = new Graph[components.size()];
+        for (int i = 0; i < components.size(); i++) {
+            result[i] = components.get(i);
         }
-
-        return sccList.toArray(new Graph[0]);
-    }
-
-    private void dfsFillOrder(Vertex vertex, HashSet<Vertex> visited, ArrayList<Vertex> finishOrder) {
-        visited.add(vertex);
-        for (Edge edge : vertex.edges) {
-            if (!visited.contains(edge.v2)) {
-                dfsFillOrder(edge.v2, visited, finishOrder);
-            }
-        }
-        finishOrder.add(vertex);
-    }
-
-    private void dfsCollectSCC(Vertex vertex, HashSet<Vertex> visited, ArrayList<Vertex> sccVertices, HashMap<Vertex, Vertex> vertexMap) {
-        visited.add(vertex);
-        sccVertices.add(vertex);
-        for (Edge edge : vertex.edges) {
-            if (!visited.contains(edge.v2)) {
-                dfsCollectSCC(edge.v2, visited, sccVertices, vertexMap);
-            }
-        }
+        return result;
     }
 
     public Vertex addVertex(String type) {
-        Vertex newVertex = new Vertex(type);
-        vertices.add(newVertex);
-        return newVertex;
+        Vertex vertex = new Vertex(type);
+        vertices.add(vertex);
+        return vertex;
     }
 
     public void addEdge(Vertex v1, Vertex v2, String type, double weight) {
-        Edge newEdge = new Edge(v1, v2, type, weight);
-        v1.edges.add(newEdge);
+        if (v1 == null || v2 == null) {
+            return;
+        }
+        v1.edges.add(new Edge(v1, v2, type, weight));
     }
 
     public Vertex getVertex(int counter) {
@@ -351,6 +315,288 @@ public class Graph {
         return null;
     }
 
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Parse a vertex token of the form "(N type)" or "N type" from a file line.
+     * Saves/restores globalCounter so file-loaded vertices don't burn counter slots.
+     */
+    private Vertex parseVertex(String token, HashMap<Integer, Vertex> map) {
+        String cleaned = token.trim();
+        if (cleaned.startsWith("(") && cleaned.endsWith(")")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1).trim();
+        }
+        int spaceIndex = cleaned.indexOf(' ');
+        if (spaceIndex < 0) {
+            return null;
+        }
+        int counter = Integer.parseInt(cleaned.substring(0, spaceIndex).trim());
+        String type = cleaned.substring(spaceIndex + 1).trim();
+
+        Vertex vertex = map.get(counter);
+        if (vertex == null) {
+            // Temporarily bypass the auto-increment so file-loaded vertices
+            // don't shift the global counter out of sync.
+            int saved = Vertex.globalCounter;
+            vertex = new Vertex(type);
+            Vertex.globalCounter = saved;
+            vertex.counter = counter;
+            map.put(counter, vertex);
+        }
+        return vertex;
+    }
+
+    /** Find an existing edge to v2 with the given type in the edge list. */
+    private Edge findEdge(ArrayList<Edge> edges, Vertex v2, EdgeType type) {
+        for (Edge edge : edges) {
+            if (edge.v2 == v2 && edge.type == type) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
+    /** Sort an edge list by v2.counter ascending (insertion sort — list is small). */
+    private void sortEdgesByV2Counter(ArrayList<Edge> edges) {
+        for (int i = 1; i < edges.size(); i++) {
+            Edge key = edges.get(i);
+            int j = i - 1;
+            while (j >= 0 && edges.get(j).v2.counter > key.v2.counter) {
+                edges.set(j + 1, edges.get(j));
+                j--;
+            }
+            edges.set(j + 1, key);
+        }
+    }
+
+    private int getMaxCounter() {
+        int max = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.counter > max) {
+                max = vertex.counter;
+            }
+        }
+        return max;
+    }
+
+    private int findSet(int[] parent, int value) {
+        int root = value;
+        while (parent[root] != root) {
+            root = parent[root];
+        }
+        // Path compression
+        while (parent[value] != value) {
+            int next = parent[value];
+            parent[value] = root;
+            value = next;
+        }
+        return root;
+    }
+
+    private void unionSet(int[] parent, int[] rank, int a, int b) {
+        int rootA = findSet(parent, a);
+        int rootB = findSet(parent, b);
+        if (rootA == rootB) {
+            return;
+        }
+        if (rank[rootA] < rank[rootB]) {
+            parent[rootA] = rootB;
+        } else if (rank[rootA] > rank[rootB]) {
+            parent[rootB] = rootA;
+        } else {
+            parent[rootB] = rootA;
+            rank[rootA]++;
+        }
+    }
+
+    private static class OrderedMinHeap extends MinHeap {
+        OrderedMinHeap(Edge[] array) {
+            super(array);
+        }
+
+        @Override
+        protected boolean compare(Edge child, Edge parent) {
+            int cmp = Double.compare(child.weight, parent.weight);
+            if (cmp != 0) {
+                return cmp < 0;
+            }
+            cmp = Integer.compare(child.v1.counter, parent.v1.counter);
+            if (cmp != 0) {
+                return cmp < 0;
+            }
+            return Integer.compare(child.v2.counter, parent.v2.counter) < 0;
+        }
+    }
+
+    /**
+     * Iterative post-order DFS (Kosaraju pass 1).
+     * Avoids StackOverflowError on large / deeply-chained graphs.
+     */
+    private void dfsOrder(Vertex start, boolean[] visited, Stack<Vertex> finishStack) {
+        Stack<int[]> callStack = new Stack<>();
+        visited[start.counter] = true;
+        callStack.push(new int[] { start.counter, 0 });
+
+        while (!callStack.isEmpty()) {
+            int[] frame = callStack.peek();
+            Vertex v = getVertex(frame[0]);
+            if (v == null) {
+                callStack.pop();
+                continue;
+            }
+
+            boolean pushed = false;
+            while (frame[1] < v.edges.size()) {
+                Edge e = v.edges.get(frame[1]++);
+                if (e.v2.counter < visited.length && !visited[e.v2.counter]) {
+                    visited[e.v2.counter] = true;
+                    callStack.push(new int[] { e.v2.counter, 0 });
+                    pushed = true;
+                    break;
+                }
+            }
+
+            if (!pushed) {
+                finishStack.push(v);
+                callStack.pop();
+            }
+        }
+    }
+
+    private ArrayList<Integer>[] buildReverseAdjacency(int maxCounter) {
+        @SuppressWarnings("unchecked")
+        ArrayList<Integer>[] reverse = new ArrayList[maxCounter + 1];
+        for (Vertex vertex : vertices) {
+            for (Edge edge : vertex.edges) {
+                int to = edge.v2.counter;
+                int from = edge.v1.counter;
+                if (to < 0 || to > maxCounter) {
+                    continue;
+                }
+                if (reverse[to] == null) {
+                    reverse[to] = new ArrayList<>();
+                }
+                reverse[to].add(from);
+            }
+        }
+        return reverse;
+    }
+
+    /**
+     * Iterative DFS on the transposed graph (Kosaraju pass 2).
+     * Avoids StackOverflowError on large graphs.
+     */
+    private void dfsReverse(
+            int startCounter,
+            boolean[] visited,
+            ArrayList<Integer>[] reverse,
+            ArrayList<Integer> component) {
+        Stack<int[]> stack = new Stack<>();
+        visited[startCounter] = true;
+        component.add(startCounter);
+        stack.push(new int[] { startCounter, 0 });
+
+        while (!stack.isEmpty()) {
+            int[] frame = stack.peek();
+            int counter = frame[0];
+            ArrayList<Integer> neighbors = reverse[counter];
+            if (neighbors == null || frame[1] >= neighbors.size()) {
+                stack.pop();
+                continue;
+            }
+            int next = neighbors.get(frame[1]++);
+            if (next >= 0 && next < visited.length && !visited[next]) {
+                visited[next] = true;
+                component.add(next);
+                stack.push(new int[] { next, 0 });
+            }
+        }
+    }
+
+    private Graph buildComponentGraph(ArrayList<Integer> component) {
+        Graph graph = new Graph();
+        if (component.isEmpty()) {
+            return graph;
+        }
+
+        int maxCounter = getMaxCounter();
+        boolean[] inComponent = new boolean[maxCounter + 1];
+        for (int counter : component) {
+            if (counter >= 0 && counter < inComponent.length) {
+                inComponent[counter] = true;
+            }
+        }
+
+        HashMap<Integer, Vertex> map = new HashMap<>();
+        for (int counter : component) {
+            Vertex original = getVertex(counter);
+            if (original == null) {
+                continue;
+            }
+            Vertex copy = graph.addVertex(original.type.toString().toLowerCase());
+            copy.counter = original.counter;
+            map.put(counter, copy);
+        }
+
+        for (int counter : component) {
+            Vertex original = getVertex(counter);
+            Vertex copy = map.get(counter);
+            if (original == null || copy == null) {
+                continue;
+            }
+            for (Edge edge : original.edges) {
+                if (edge.v2.counter >= 0
+                        && edge.v2.counter < inComponent.length
+                        && inComponent[edge.v2.counter]) {
+                    Vertex toCopy = map.get(edge.v2.counter);
+                    if (toCopy != null) {
+                        graph.addEdge(copy, toCopy,
+                                edge.type.toString().toLowerCase(), edge.weight);
+                    }
+                }
+            }
+        }
+
+        return graph;
+    }
+
+    /** Insertion-sort edges by (weight ASC, v1.counter ASC, v2.counter ASC). */
+    private void sortEdgeArray(Edge[] arr) {
+        for (int i = 1; i < arr.length; i++) {
+            Edge key = arr[i];
+            int j = i - 1;
+            while (j >= 0 && compareEdges(arr[j], key) > 0) {
+                arr[j + 1] = arr[j];
+                j--;
+            }
+            arr[j + 1] = key;
+        }
+    }
+
+    private int compareEdges(Edge a, Edge b) {
+        int cmp = Double.compare(a.weight, b.weight);
+        if (cmp != 0) return cmp;
+        cmp = Integer.compare(a.v1.counter, b.v1.counter);
+        if (cmp != 0) return cmp;
+        return Integer.compare(a.v2.counter, b.v2.counter);
+    }
+
+    /** Insertion-sort an int list ascending. */
+    private void sortIntList(ArrayList<Integer> list) {
+        for (int i = 1; i < list.size(); i++) {
+            int key = list.get(i);
+            int j = i - 1;
+            while (j >= 0 && list.get(j) > key) {
+                list.set(j + 1, list.get(j));
+                j--;
+            }
+            list.set(j + 1, key);
+        }
+    }
+
+    // ! DO NOT MODIFY THE FOLLOWING METHODS.
 
     @Override
     public String toString() {
@@ -392,182 +638,5 @@ public class Graph {
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public void fromFile(String filename) {
-        vertices.clear();
-
-        try {
-            java.util.List<String> lines = Files.readAllLines(Paths.get(filename));
-            HashMap<Integer, Vertex> vertexMap = new HashMap<>();
-
-            // First pass: create all vertices from both edge lines and isolated vertex lines
-            for (String line : lines) {
-                if (line.trim().isEmpty()) continue;
-
-                // Check for vertex format: "(counter imagename)"
-                if (line.startsWith("(") && line.endsWith(")")) {
-                    String vertexContent = line.substring(1, line.length() - 1); // Remove parentheses
-                    String[] parts = vertexContent.split(" ");
-                    if (parts.length >= 2) {
-                        int counter = Integer.parseInt(parts[0]);
-                        String imageName = parts[1]; // e.g., "miner", "smelter", etc.
-
-                        // Convert imageName to VertexType
-                        VertexType type = VertexType.UNDEFINED;
-                        try {
-                            type = VertexType.valueOf(imageName.toUpperCase());
-                        } catch (IllegalArgumentException e) {
-                            type = VertexType.UNDEFINED;
-                        }
-
-                        Vertex vertex = new Vertex(type.toString().toLowerCase());
-                        vertex.counter = counter; // Set the correct counter value
-                        // Adjust globalCounter to avoid conflicts
-                        if (counter >= Vertex.globalCounter) {
-                            Vertex.globalCounter = counter + 1;
-                        }
-                        vertexMap.put(counter, vertex);
-                    }
-                }
-            }
-
-            // Second pass: create edges
-            for (String line : lines) {
-                if (line.trim().isEmpty()) continue;
-
-                // Check for edge format: "imagename,weight:(counter imagename)->(counter imagename)"
-                if (line.contains(":") && line.contains("->")) {
-                    String[] parts = line.split(":");
-                    if (parts.length >= 2) {
-                        String edgeInfo = parts[0]; // e.g., "iron,5.5"
-                        String vertexInfo = parts[1]; // e.g., "(2 miner)->(4 smelter)"
-
-                        // Parse edge info: "imagename,weight"
-                        String[] edgeParts = edgeInfo.split(",");
-                        if (edgeParts.length >= 2) {
-                            String imageName = edgeParts[0].trim(); // e.g., "iron"
-                            double weight = Double.parseDouble(edgeParts[1].trim());
-
-                            // Parse vertex info: "(counter imagename)->(counter imagename)"
-                            String[] vertexParts = vertexInfo.split("->");
-                            if (vertexParts.length == 2) {
-                                // Parse source vertex: "(counter imagename)"
-                                String v1Part = vertexParts[0].trim(); // e.g., "(2 miner)"
-                                // Parse destination vertex: "(counter imagename)"
-                                String v2Part = vertexParts[1].trim(); // e.g., "(4 smelter)"
-
-                                // Extract counter and imageName from "(counter imagename)" format
-                                if (v1Part.startsWith("(") && v1Part.endsWith(")") &&
-                                    v2Part.startsWith("(") && v2Part.endsWith(")")) {
-                                    String v1Content = v1Part.substring(1, v1Part.length() - 1); // Remove parentheses
-                                    String v2Content = v2Part.substring(1, v2Part.length() - 1); // Remove parentheses
-
-                                    String[] v1Parts = v1Content.split(" ");
-                                    String[] v2Parts = v2Content.split(" ");
-
-                                    if (v1Parts.length >= 2 && v2Parts.length >= 2) {
-                                        int v1Counter = Integer.parseInt(v1Parts[0]);
-                                        String v1ImageName = v1Parts[1];
-                                        int v2Counter = Integer.parseInt(v2Parts[0]);
-                                        String v2ImageName = v2Parts[1];
-
-                                        // Get or create vertices
-                                        Vertex v1 = vertexMap.get(v1Counter);
-                                        if (v1 == null) {
-                                            // Create vertex with the correct type from imageName
-                                            VertexType v1Type = VertexType.UNDEFINED;
-                                            try {
-                                                v1Type = VertexType.valueOf(v1ImageName.toUpperCase());
-                                            } catch (IllegalArgumentException e) {
-                                                v1Type = VertexType.UNDEFINED;
-                                            }
-                                            v1 = new Vertex(v1Type.toString().toLowerCase());
-                                            v1.counter = v1Counter;
-                                            if (v1Counter >= Vertex.globalCounter) {
-                                                Vertex.globalCounter = v1Counter + 1;
-                                            }
-                                            vertexMap.put(v1Counter, v1);
-                                        }
-
-                                        Vertex v2 = vertexMap.get(v2Counter);
-                                        if (v2 == null) {
-                                            // Create vertex with the correct type from imageName
-                                            VertexType v2Type = VertexType.UNDEFINED;
-                                            try {
-                                                v2Type = VertexType.valueOf(v2ImageName.toUpperCase());
-                                            } catch (IllegalArgumentException e) {
-                                                v2Type = VertexType.UNDEFINED;
-                                            }
-                                            v2 = new Vertex(v2Type.toString().toLowerCase());
-                                            v2.counter = v2Counter;
-                                            if (v2Counter >= Vertex.globalCounter) {
-                                                Vertex.globalCounter = v2Counter + 1;
-                                            }
-                                            vertexMap.put(v2Counter, v2);
-                                        }
-
-                                        // Add the edge
-                                        if (v1 != null && v2 != null) {
-                                            addEdge(v1, v2, imageName, weight);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Add all vertices to the graph's vertex list (in case any were missed)
-            vertices.addAll(vertexMap.values());
-        } catch (java.io.IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public Vertex fromString(String str){
-
-        if (str.contains("):")) {
-            String vertexPart = str.substring(0, str.indexOf("):") + 2);
-            String vertexContent = vertexPart.substring(1, vertexPart.length() - 2); // Remove parentheses
-            String[] parts = vertexContent.split(" ");
-            if (parts.length >= 2) {
-                int counter = Integer.parseInt(parts[0]);
-                String typeStr = parts[1].replace(".png", ""); // Remove .png extension
-                try {
-                    VertexType type = VertexType.valueOf(typeStr.toUpperCase());
-                    Vertex vertex = new Vertex(type.toString().toLowerCase());
-                    vertex.counter = counter; // Set the correct counter value
- 
-                    if (counter >= Vertex.globalCounter) {
-                        Vertex.globalCounter = counter + 1;
-                    }
-                    return vertex;
-                } catch (IllegalArgumentException e) {
-                    return new Vertex("undefined");
-                }
-            }
-        } else if (str.contains("->")) {
-
-            String[] parts = str.split(":");
-            if (parts.length >= 2) {
-                String edgeInfo = parts[0]; // e.g., "iron.png, 5.5"
-                String vertexInfo = parts[1]; // e.g., "1->2"
-
-
-                String[] edgeParts = edgeInfo.split(", ");
-                String typeStr = edgeParts[0].replace(".png", ""); // Remove .png
-                double weight = Double.parseDouble(edgeParts[1]);
-
-                String[] vertexParts = vertexInfo.split("->");
-                int v1Counter = Integer.parseInt(vertexParts[0]);
-                int v2Counter = Integer.parseInt(vertexParts[1]);
-
-                return null;
-            }
-        }
-
-        return null;
     }
 }
