@@ -11,19 +11,43 @@ public class Vertex {
     VertexType type;
 
     public Vertex(String type) {
-        this.counter = globalCounter++;
-        this.edges = new ArrayList<>();
-        try {
-            this.type = VertexType.valueOf(type.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            this.type = VertexType.UNDEFINED;
+        String value = type == null ? "" : type.trim().toLowerCase();
+        switch (value) {
+            case "miner":
+                this.type = VertexType.MINER;
+                break;
+            case "smelter":
+                this.type = VertexType.SMELTER;
+                break;
+            case "constructor":
+                this.type = VertexType.CONSTRUCTOR;
+                break;
+            case "assembler":
+                this.type = VertexType.ASSEMBLER;
+                break;
+            case "manufacturer":
+                this.type = VertexType.MANUFACTURER;
+                break;
+            case "refinery":
+                this.type = VertexType.REFINERY;
+                break;
+            case "generator":
+                this.type = VertexType.GENERATOR;
+                break;
+            default:
+                this.type = VertexType.UNDEFINED;
+                break;
         }
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Vertex)) return false;
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Vertex)) {
+            return false;
+        }
         Vertex other = (Vertex) obj;
         return this.type == other.type;
     }
