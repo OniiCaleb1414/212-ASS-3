@@ -60,28 +60,28 @@ public class Vertex {
         String image = "";
         switch (type) {
             case MINER:
-                image = "miner";
+                image = "miner.png";
                 break;
             case SMELTER:
-                image = "smelter";
+                image = "smelter.png";
                 break;
             case CONSTRUCTOR:
-                image = "constructor";
+                image = "constructor.png";
                 break;
             case ASSEMBLER:
-                image = "assembler";
+                image = "assembler.png";
                 break;
             case MANUFACTURER:
-                image = "manufacturer";
+                image = "manufacturer.png";
                 break;
             case REFINERY:
-                image = "refinery";
+                image = "refinery.png";
                 break;
             case GENERATOR:
-                image = "generator";
+                image = "generator.png";
                 break;
             default:
-                image = "undefined";
+                image = "undefined.png";
         }
 
         return "(" + counter + " " + image + ")";

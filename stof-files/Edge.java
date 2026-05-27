@@ -60,22 +60,22 @@ public class Edge {
         String image = "";
         switch (type) {
             case IRON:
-                image = "iron";
+                image = "iron.png";
                 break;
             case COAL:
-                image = "coal";
+                image = "coal.png";
                 break;
             case COPPER:
-                image = "copper";
+                image = "copper.png";
                 break;
             case CATERIUM:
-                image = "caterium";
+                image = "caterium.png";
                 break;
             case ALUMINUM:
-                image = "aluminum";
+                image = "aluminum.png";
                 break;
             default:
-                image = "undefined";
+                image = "undefined.png";
                 break;
         }
         return image + "," + weight;
