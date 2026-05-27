@@ -15,6 +15,9 @@ public class Edge {
         this.weight = weight;
 
         String value = type == null ? "" : type.trim().toLowerCase();
+        if (value.endsWith(".png")) {
+            value = value.substring(0, value.length() - 4);
+        }
         switch (value) {
             case "iron":
                 this.type = EdgeType.IRON;
@@ -46,8 +49,8 @@ public class Edge {
             return false;
         }
         Edge other = (Edge) obj;
-        return this.v1.counter == other.v1.counter
-            && this.v2.counter == other.v2.counter
+        return this.v1.equals(other.v1)
+                && this.v2.equals(other.v2)
                 && this.type == other.type
                 && Double.compare(this.weight, other.weight) == 0;
     }

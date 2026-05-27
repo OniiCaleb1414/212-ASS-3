@@ -118,52 +118,24 @@ public class Graph {
     }
 
     public void Stage2Optimization() {
-        // Collect all edges before any structural changes
-        ArrayList<Edge> originalEdges = new ArrayList<>();
+        HashMap<String, Edge> representatives = new HashMap<>();
         for (Vertex vertex : vertices) {
-            originalEdges.addAll(vertex.edges);
-        }
-
-        // Pick one representative vertex per VertexType
-        Vertex[] representatives = new Vertex[VertexType.values().length];
-        ArrayList<Vertex> newVertices = new ArrayList<>();
-        for (Vertex vertex : vertices) {
-            int idx = vertex.type.ordinal();
-            if (representatives[idx] == null) {
-                representatives[idx] = vertex;
-                newVertices.add(vertex);
-            }
-        }
-
-        // Clear edges on all representatives
-        for (Vertex vertex : newVertices) {
-            vertex.edges = new ArrayList<>();
-        }
-
-        // Re-map every original edge onto its representative endpoints
-        for (Edge edge : originalEdges) {
-            Vertex newV1 = representatives[edge.v1.type.ordinal()];
-            Vertex newV2 = representatives[edge.v2.type.ordinal()];
-            if (newV1 == null || newV2 == null) {
+            if (vertex.edges.isEmpty()) {
                 continue;
             }
-            Edge existing = findEdge(newV1.edges, newV2, edge.type);
-            if (existing != null) {
-                existing.weight += edge.weight;
-            } else {
-                newV1.edges.add(new Edge(newV1, newV2,
-                        edge.type.toString().toLowerCase(), edge.weight));
+            ArrayList<Edge> kept = new ArrayList<>();
+            for (Edge edge : vertex.edges) {
+                String key = edge.v1.type + "|" + edge.v2.type + "|" + edge.type;
+                Edge existing = representatives.get(key);
+                if (existing == null) {
+                    representatives.put(key, edge);
+                    kept.add(edge);
+                } else {
+                    existing.weight += edge.weight;
+                }
             }
+            vertex.edges = kept;
         }
-
-        // Sort each representative's edge list by destination counter (ascending)
-        // so that output order is deterministic and matches expected behaviour.
-        for (Vertex vertex : newVertices) {
-            sortEdgesByV2Counter(vertex.edges);
-        }
-
-        vertices.clear();
-        vertices.addAll(newVertices);
     }
 
     public void Stage3Optimization() {
@@ -236,7 +208,7 @@ public class Graph {
         // Sort by (weight ASC, v1.counter ASC, v2.counter ASC) so the heap
         // pops ties in the correct order required by the spec.
         sortEdgeArray(array);
-        MinHeap heap = new MinHeap(array);
+        MinHeap heap = new OrderedMinHeap(array);
 
         int maxCounter = getMaxCounter();
         int[] parent = new int[maxCounter + 1];
@@ -439,6 +411,25 @@ public class Graph {
         }
     }
 
+    private static class OrderedMinHeap extends MinHeap {
+        OrderedMinHeap(Edge[] array) {
+            super(array);
+        }
+
+        @Override
+        protected boolean compare(Edge child, Edge parent) {
+            int cmp = Double.compare(child.weight, parent.weight);
+            if (cmp != 0) {
+                return cmp < 0;
+            }
+            cmp = Integer.compare(child.v1.counter, parent.v1.counter);
+            if (cmp != 0) {
+                return cmp < 0;
+            }
+            return Integer.compare(child.v2.counter, parent.v2.counter) < 0;
+        }
+    }
+
     /**
      * Iterative post-order DFS (Kosaraju pass 1).
      * Avoids StackOverflowError on large / deeply-chained graphs.
@@ -502,23 +493,24 @@ public class Graph {
             boolean[] visited,
             ArrayList<Integer>[] reverse,
             ArrayList<Integer> component) {
-        Stack<Integer> stack = new Stack<>();
+        Stack<int[]> stack = new Stack<>();
         visited[startCounter] = true;
-        stack.push(startCounter);
+        component.add(startCounter);
+        stack.push(new int[] { startCounter, 0 });
 
         while (!stack.isEmpty()) {
-            int counter = stack.pop();
-            component.add(counter);
-
+            int[] frame = stack.peek();
+            int counter = frame[0];
             ArrayList<Integer> neighbors = reverse[counter];
-            if (neighbors == null) {
+            if (neighbors == null || frame[1] >= neighbors.size()) {
+                stack.pop();
                 continue;
             }
-            for (int next : neighbors) {
-                if (next >= 0 && next < visited.length && !visited[next]) {
-                    visited[next] = true;
-                    stack.push(next);
-                }
+            int next = neighbors.get(frame[1]++);
+            if (next >= 0 && next < visited.length && !visited[next]) {
+                visited[next] = true;
+                component.add(next);
+                stack.push(new int[] { next, 0 });
             }
         }
     }
@@ -528,10 +520,6 @@ public class Graph {
         if (component.isEmpty()) {
             return graph;
         }
-
-        // Sort component counters ascending so vertices are added in counter order.
-        // This ensures toString() produces output in the order FitchFork expects.
-        sortIntList(component);
 
         int maxCounter = getMaxCounter();
         boolean[] inComponent = new boolean[maxCounter + 1];

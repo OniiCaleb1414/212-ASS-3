@@ -12,6 +12,9 @@ public class Vertex {
 
     public Vertex(String type) {
         String value = type == null ? "" : type.trim().toLowerCase();
+        if (value.endsWith(".png")) {
+            value = value.substring(0, value.length() - 4);
+        }
         switch (value) {
             case "miner":
                 this.type = VertexType.MINER;
